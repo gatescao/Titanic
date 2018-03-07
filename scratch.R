@@ -7,9 +7,17 @@ test <- read_csv(file = "data/test.csv") %>% as_tibble()
 
 ##Handle missing values
 colSums(is.na(train))
+colSums(is.na(test))
+
 train <- train %>% select(-PassengerId, -Name, -Ticket, -Cabin)
 
 train$Age[is.na(train$Age)] <- median(na.omit(train$Age))
 
 ##Logistic regression
 glm_fit <- glm(Survived ~., data = train, family = binomial)
+
+##KNN
+
+##LDA 
+
+##QDA
