@@ -74,5 +74,21 @@ mean(knn_pred == validation_knn$Survived)
 library(MASS)
 lda_fit <- lda(Survived ~., data = training)
 lda_fit
+plot(lda_fit)
+
+lda_predict <- predict(lda_fit, validation)
+names(lda_predict)
+lda_class <- lda_predict$class
+table(lda_class, validation_knn$Survived)
+mean(lda_class == validation_knn$Survived)
 
 ##QDA
+qda_fit <- qda(Survived ~., data = training)
+qda_fit
+plot(qda_fit)
+
+qda_predict <- predict(qda_fit, validation)
+names(qda_predict)
+qda_class <- qda_predict$class
+table(qda_class, validation_knn$Survived)
+mean(qda_class == validation_knn$Survived)
