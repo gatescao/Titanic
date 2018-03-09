@@ -1,8 +1,6 @@
 library(shiny)
 library(tree)
 library(dplyr)
-library(rpart)
-library(caret)
 
 #Build model
 tree_fit <- tree(as.factor(Survived) ~., data = training)
