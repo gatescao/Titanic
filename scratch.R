@@ -103,17 +103,6 @@ glm_test <- test %>%
 write_csv(glm_test, "glm_test.csv")
 
 
-##10-fold cross validation
-train_10fold <- training %>% crossv_kfold(k = 10, id = "fold")
-
-mod <- function(df) {
-  glm(Survived ~., data = df, family = binomial)
-}
-
-train_10fold <- train_10fold %>%
-  mutate(mod = map(train, mod)) 
-
-
 ##Classification trees
 library(tree)
 library(rattle)
@@ -123,7 +112,7 @@ summary(tree_fit)
 
 tree_preds <- predict(tree_fit, validation, type = "class")
 table(tree_preds, validation$Survived)
-mean(tree_preds == validation$Survived)
+mean(tree_preds == validation$Survived) #0.79
 
 set.seed(1)
 cv_survived <- cv.tree(tree_fit, FUN = prune.misclass)
@@ -142,28 +131,73 @@ tree_test <- test %>%
 write_csv(tree_test, "tree_test.csv")
 
 
+##Bagging 
+library(randomForest)
+set.seed(1)
+bag_fit <- randomForest(Survived ~., data = training, mtry = 7, importance = TRUE)
+bag_fit
+
+bag_preds <- predict(bag_fit, validation)
+table(bag_preds, validation$Survived)
+mean(bag_preds == validation$Survived)  #0.79
+
+bag_preds <- predict(bag_fit, test)
+bag_test <- test %>% 
+  mutate(Survived = bag_preds) %>%
+  dplyr::select(PassengerId, Survived)
+
+write_csv(bag_test, "bag_test.csv") #0.73502
+
+##Random Forest
+rf_fit <- randomForest(Survived ~., data = training, mtry = 2, importance = TRUE)
+rf_preds <- predict(rf_fit, validation)
+table(rf_preds, validation$Survived)
+mean(rf_preds == validation$Survived)  #0.80
+
+rf_preds <- predict(rf_fit, test)
+rf_test <- test %>% 
+  mutate(Survived = rf_preds) %>%
+  dplyr::select(PassengerId, Survived)
+
+write_csv(rf_test, "rf_test.csv")  #0.78947
+
+
+##Boosting
+library(gbm)
+set.seed(1)
+boost_fit <- gbm(Survived ~., data = training, distribution = "gaussian", n.trees = 5000, interaction.depth = 4)
+boost_preds <- predict(boost_fit, validation, n.trees = 5000)
+boost_preds <-  ifelse(boost_preds > 1.5, 1, 0)
+table(boost_preds, validation$Survived)
+mean(boost_preds == validation$Survived)  #0.79
+
+boost_preds <- predict(boost_fit, test, n.trees = 5000)
+boost_preds <-  ifelse(boost_preds > 1.5, 1, 0)
+boost_test <- test %>% 
+  mutate(Survived = boost_preds) %>%
+  dplyr::select(PassengerId, Survived)
+
+write_csv(boost_test, "boost_test.csv")  #0.77511
 
 ##KNN
-###Data preparation
-training_knn <- training
-validation_knn <- validation
-training_knn <- training_knn %>%
-  mutate(Sex = ifelse(Sex == "male", 1, 0),
-         Embarked = sapply(Embarked, switch, "C" = 0, "Q" = 1, "S" = 2))
-validation_knn <- validation_knn %>%
-  mutate(Sex = ifelse(Sex == "male", 1, 0),
-         Embarked = sapply(Embarked, switch, "C" = 0, "Q" = 1, "S" = 2))
-
-###Modeling
 library(class)
-train_X <- training_knn %>% select(-Survived)
-test_X <- validation_knn %>% select(-Survived)
-train_survival <- training_knn %>% select(Survived) 
+train_X <- training %>% dplyr::select(-Survived)
+test_X <- validation %>% dplyr::select(-Survived)
+train_survival <- training %>% dplyr::select(Survived) 
 
 set.seed(1)
-knn_pred <- knn(train_X, test_X, t(train_survival), k = 3)
+knn_preds <- knn(train_X, test_X, t(train_survival), k = 3)
 table(knn_pred, validation_knn$Survived)
-mean(knn_pred == validation_knn$Survived)
+mean(knn_pred == validation_knn$Survived)  #0.67
+
+test_X <- test %>% dplyr::select(Pclass, Sex, Age, SibSp, Parch, Fare, Embarked)
+knn_preds <- knn(train_X, test_X, t(train_survival), k = 3)
+
+knn_test <- test %>% 
+  mutate(Survived = knn_preds) %>%
+  dplyr::select(PassengerId, Survived)
+
+write_csv(knn_test, "knn_test.csv") #0.57894
 
 ##LDA 
 library(MASS)
@@ -174,15 +208,15 @@ plot(lda_fit)
 lda_predict <- predict(lda_fit, validation)
 names(lda_predict)
 lda_class <- lda_predict$class
-table(lda_class, validation_knn$Survived)
-mean(lda_class == validation_knn$Survived)
+table(lda_class, validation$Survived)
+mean(lda_class == validation$Survived) #0.76
 
 lda_preds <- predict(lda_fit, test)$class
 lda_test <- test %>% 
   mutate(Survived = lda_preds) %>%
   dplyr::select(PassengerId, Survived)
 
-write_csv(lda_test, "lda_test.csv")
+write_csv(lda_test, "lda_test.csv")  #0.75119
 
 ##QDA
 qda_fit <- qda(Survived ~., data = training)
@@ -192,6 +226,19 @@ plot(qda_fit)
 qda_predict <- predict(qda_fit, validation)
 names(qda_predict)
 qda_class <- qda_predict$class
-table(qda_class, validation_knn$Survived)
-mean(qda_class == validation_knn$Survived)
+table(qda_class, validation$Survived)
+mean(qda_class == validation$Survived) #0.77
+
+qda_preds <- predict(qda_fit, test)$class
+qda_test <- test %>% 
+  mutate(Survived = qda_preds) %>%
+  dplyr::select(PassengerId, Survived)
+
+write_csv(qda_test, "qda_test.csv")  #0.76076
+
+
+#Leaderboard
+Model <- c("Logistic Regression", "KNN", "LDA", "QDA", "Decision Tree", "Bagging",  "Random Forest", "Boosting")
+Accuracy <- c(0.74612, 0.57894, 0.75119, 0.76076, 0.79904, 0.73502, 0.78947, 0.77511)
+tibble(Model, Accuracy) %>% arrange(desc(Accuracy))
 
