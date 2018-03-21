@@ -56,7 +56,19 @@ melted_cormat <- melt(cormat)
 ggplot(data = melted_cormat, aes(x = Var1, y = Var2, fill = value)) + 
   geom_tile()
 
+foo <- train %>%
+  mutate(Age = cut(train$Age, 8)) %>%
+  group_by(Sex, Age) %>%
+  summarize(n = n()) %>%
+  mutate(freq = n / sum(n))
 
+train %>%
+  mutate(Age = cut(train$Age, 8)) %>%
+  group_by(Age) %>%
+  summarize(survival_rate = mean(Survived)) %>%
+  ggplot(aes(Age, survival_rate)) +
+  geom_col(aes(fill = Age)) +
+  theme(axis.text.x=element_text(angle=45, hjust=1), legend.position="none")
 
 ##Data preparation
 training <- training %>%
