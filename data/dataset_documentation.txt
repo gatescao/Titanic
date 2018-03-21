@@ -1,0 +1,12 @@
+data/unprocessed:
+
+train.csv - A dataset provided by Kaggle. We used this dataset to train and cross-validate our models locally.
+test.csv - Another dataset provided by Kaggle. This dataset does not contain data on survival, which is withheld by Kaggle. Kaggle uses this dataset to rank competitors.
+
+The above two datasets can be obtained from: https://www.kaggle.com/c/titanic/data
+
+data/processed:
+
+train_new.csv - The train.csv with PassengerId, Name, Ticket, and Cabin removed. Missing Age data is substituted with the median, which is 28. Missing Embarked data is substituted with the mode, which is "S", representing Southampton.
+training.csv - 80% of train_new.csv, randomly selected using the sample_frac() function in R with seed set to 1.
+validation.csv - The remaining 20% of train_new.csv after training.csv has been selected.
