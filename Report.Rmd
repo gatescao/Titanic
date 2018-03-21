@@ -460,7 +460,9 @@ We also uploaded our analysis to Kaggle and ranked 1580th among over 10,000 comp
 # Discussion
 
 # Discussion
+Most of our models worked fairly well. Except for KNN, all models get an accuracy of above 0.7. Our best model, the Decision Tree, got an accuracy of 0.799, which means that we are able to correctly predict the survival of a passenger nearly 80% of the time, given their cabin class, sex, age, # of siblings or spouse and # of parents or children on board, port of embarkment, and ticket fare.
 
+Although our models fared quite well, the leaders of the Kaggle competition achieved an accuracy of 1. Moving further, we can try combining the models and giving them different weights to improve accuracy. We can also try finding additional data, such as the distance of each passenger's cabin to deck.
 
 
 
